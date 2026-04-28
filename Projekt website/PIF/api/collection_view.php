@@ -1,0 +1,146 @@
+<?php
+// collection_view.php
+// Show all measurements that are part of a collection
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require '../includes/db_connection.php';
+require '../config/lang.php';
+
+$lang = $_SESSION['lang'] ?? 'en';
+
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: ../auth/login.php');
+    exit;
+}
+
+$currentUser = $_SESSION['pk_username'] ?? null;
+if (!$currentUser) {
+    header('Location: ../includes/logout.inc.php');
+    exit;
+}
+
+$collectionId = intval($_GET['id'] ?? 0);
+if ($collectionId <= 0) {
+    header('Location: ../user/user_collections.php');
+    exit;
+}
+
+// Check that user is owner (later you can also allow shared access)
+$sql = "SELECT name, description
+        FROM collection
+        WHERE pk_collection = ? AND fk_user_creates = ?";
+$stmt = mysqli_prepare($link, $sql);
+mysqli_stmt_bind_param($stmt, 'is', $collectionId, $currentUser);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+$collection = mysqli_fetch_assoc($res);
+mysqli_free_result($res);
+mysqli_stmt_close($stmt);
+
+if (!$collection) {
+    echo "Collection not found or no access.";
+    exit;
+}
+
+// Load measurements via contains
+$measurements = [];
+$sql = "SELECT m.*
+        FROM contains c
+        JOIN measurement m ON c.pkfk_measurement = m.pk_measurement
+        WHERE c.pkfk_collection = ?
+        ORDER BY m.timestamp ASC";
+$stmt = mysqli_prepare($link, $sql);
+mysqli_stmt_bind_param($stmt, 'i', $collectionId);
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+while ($row = mysqli_fetch_assoc($res)) {
+    $measurements[] = $row;
+}
+mysqli_free_result($res);
+mysqli_stmt_close($stmt);
+?>
+<!doctype html>
+<html lang="<?php echo htmlspecialchars($lang); ?>">
+<head>
+    <meta charset="utf-8">
+    <title><?php echo htmlspecialchars($collection['name']); ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/headers.css">
+    <link rel="stylesheet" href="../css/sidebars.css">
+</head>
+<body>
+
+<?php include '../includes/header.php'; ?>
+
+<div class="container" style="margin-top: 80px;">
+
+    <h1 class="h4 mb-2">
+        <?php echo htmlspecialchars($collection['name']); ?>
+    </h1>
+    <p class="text-muted">
+        <?php echo nl2br(htmlspecialchars($collection['description'])); ?>
+    </p>
+
+    <a href="../user/user_collections.php" class="btn btn-secondary btn-sm mb-3">
+        <?php echo ($lang === 'de') ? 'Zurück' : 'Back'; ?>
+    </a>
+
+    <div class="card">
+        <div class="card-body">
+            <h2 class="h5 mb-3">
+                <?php echo ($lang === 'de') ? 'Messwerte in dieser Sammlung' : 'Measurements in this collection'; ?>
+            </h2>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th><?php echo ($lang === 'de') ? 'Zeit' : 'Time'; ?></th>
+                            <th><?php echo ($lang === 'de') ? 'Temperatur [°C]' : 'Temperature [°C]'; ?></th>
+                            <th><?php echo ($lang === 'de') ? 'Luftfeuchte [%]' : 'Humidity [%]'; ?></th>
+                            <th><?php echo ($lang === 'de') ? 'Druck [hPa]' : 'Pressure [hPa]'; ?></th>
+                            <th><?php echo ($lang === 'de') ? 'Licht' : 'Light'; ?></th>
+                            <th><?php echo ($lang === 'de') ? 'Gas' : 'Gas'; ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (count($measurements) > 0): ?>
+                        <?php foreach ($measurements as $m): ?>
+                            <tr>
+                                <td><?php echo (int)$m['pk_measurement']; ?></td>
+                                <td><?php echo htmlspecialchars($m['timestamp']); ?></td>
+                                <td><?php echo htmlspecialchars($m['temperature']); ?></td>
+                                <td><?php echo htmlspecialchars($m['humidity']); ?></td>
+                                <td><?php echo htmlspecialchars($m['pressure']); ?></td>
+                                <td><?php echo htmlspecialchars($m['light']); ?></td>
+                                <td><?php echo htmlspecialchars($m['gas']); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="7" class="text-muted">
+                                <?php echo ($lang === 'de')
+                                    ? 'Diese Sammlung enthält noch keine Messwerte.'
+                                    : 'This collection does not contain any measurements yet.'; ?>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
