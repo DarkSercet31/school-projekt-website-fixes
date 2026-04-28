@@ -19,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate the code against email_tokens
     $stmt = $pdo->prepare(
         "SELECT token FROM email_tokens
-         WHERE token = ? AND fk_username = ? AND type = 'otp_login'"
+         WHERE token = ? AND fk_username = ? AND type = 'otp_login'
+           AND expires_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)"
     );
     $stmt->execute([$code, $pendingUser]);
 

@@ -336,8 +336,8 @@ if (!empty($_SESSION['loggedin']) && isset($pdo)) {
 
             <!-- RECHTS: Profil-Emblem + Dropdown -->
             <?php
-            $displayName = $_SESSION['pk_username'] ?? 'User';
-            $initials    = strtoupper(substr($displayName, 0, 1));
+            $profileUrl = '../auth/account.php';
+            $logoutUrl  = '../includes/logout.inc.php';
             ?>
             <div class="d-flex align-items-center gap-2">
 
@@ -372,59 +372,27 @@ if (!empty($_SESSION['loggedin']) && isset($pdo)) {
                 <?php endif; ?>
 
                 <div class="dropdown">
-                    <button class="btn profile-toggle d-flex align-items-center"
-                            type="button" id="profileDropdown" data-bs-toggle="dropdown"
-                            aria-expanded="false">
+                    <button class="btn dropdown-toggle d-flex align-items-center gap-2"
+                            type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                            style="background:none; border:none; color:inherit;">
                         <span class="profile-initials">
-                            <?php echo htmlspecialchars($initials); ?>
+                            <?= strtoupper(substr($_SESSION['firstName'] ?? $_SESSION['username'] ?? 'U', 0, 1)) ?>
                         </span>
-                        <span class="profile-name">
-                            <?php echo htmlspecialchars($displayName); ?>
+                        <span class="profile-name d-none d-md-inline">
+                            <?= htmlspecialchars($_SESSION['firstName'] ?? $_SESSION['username'] ?? 'User') ?>
                         </span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                        <li class="dropdown-item-text fw-semibold">
-                            <?php echo htmlspecialchars($displayName); ?>
-                        </li>
+                    <ul class="dropdown-menu dropdown-menu-end">
                         <li>
-                            <a class="dropdown-item" href="../auth/account.php">
-                                <?php echo ($lang === 'de') ? 'Profil bearbeiten' : 'Edit profile'; ?>
+                            <a class="dropdown-item" href="<?= $profileUrl ?>">
+                                <i class="bi bi-person me-2"></i>My Profile
                             </a>
                         </li>
-
                         <li><hr class="dropdown-divider"></li>
-
-                        <li class="dropdown-item-text small">
-                            <?php echo ($lang === 'de') ? 'Sprache' : 'Language'; ?>
-                        </li>
-                        <li class="px-3 pb-2">
-                            <div class="btn-group btn-group-sm w-100" role="group" aria-label="Language">
-                                <a href="?lang=en"
-                                   class="btn btn-outline-light<?php echo $lang === 'en' ? ' active' : ''; ?>">EN</a>
-                                <a href="?lang=de"
-                                   class="btn btn-outline-light<?php echo $lang === 'de' ? ' active' : ''; ?>">DE</a>
-                            </div>
-                        </li>
-
-                        <li class="dropdown-item-text small">
-                            Theme
-                        </li>
-                        <li class="px-3 pb-2">
-                            <button type="button"
-                                    class="btn theme-toggle btn-sm w-100"
-                                    id="themeToggle">
-                                Light
-                            </button>
-                        </li>
-
-                        <li><hr class="dropdown-divider"></li>
-
                         <li>
-                            <form method="post" action="../includes/logout.inc.php" class="px-3 mb-2">
-                                <button class="btn btn-sm btn-outline-danger w-100" type="submit">
-                                    Logout
-                                </button>
-                            </form>
+                            <a class="dropdown-item text-danger" href="<?= $logoutUrl ?>">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </a>
                         </li>
                     </ul>
                 </div><!-- /dropdown -->
